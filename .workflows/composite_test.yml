@@ -2,7 +2,7 @@ name: Composite Test
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [integration]
   workflow_dispatch:
 
 jobs:
