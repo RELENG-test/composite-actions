@@ -1,0 +1,36 @@
+name: Repository Standards Enforcement
+on:
+    pull_request:
+env:
+  NUM_BRANCHES: 21
+  BRANCH_NAME_REGEX: ^(feature\/[0-9a-zA-Z._\-]+)$|^(release\/[0-9a-zA-Z._\-]+)$|^(integration)
+  FILE_EXCLUSION_REGEX: ^(.*\.exe)$|^(.*\.*nuget)$|^(.*\.*gradle-wrapper)$|^(.*\.jar)$|^(.*\.cache)$|^(.*\.Cache)$|^(.*\.resharper)$|^(.*\.Resharper)$|^(.*\.aps)$|^(.*\.bak)$|^(.*\.build.csdef)$|^(.*\.builds)$|^(.*\.c)$|^(.*\.db)$|^(.*\.dbmdl)$|^(.*\.DS_Store)$|^(.*\.idea)$|^(.*\.ilk)$|^(.*\.jar)$|^(.*\.lib)$|^(.*\.log)$|^(.*\.ncb)$|^(.*\.obj)$|^(.*\.opensdf)$|^(.*\.pch)$|^(.*\.pdb)$|^(.*\.pgc)$|^(.*\.pgd)$|^(.*\.psess)$|^(.*\.pyc)$|^(.*\.rsp)$|^(.*\.sbr)$|^(.*\.sdf)$|^(.*\.sln.docstates)$|^(.*\.suo)$|^(.*\.tlb)$|^(.*\.tlh)$|^(.*\.tli)$|^(.*\.tmp)$|^(.*\.user)$|^(.*\.vsp)$|^(.*\.vspcc)$|^(.*\.vspx)$|^(.*\.vssscc)$
+jobs:
+  branch_rules:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
+    - name: Ensure Branch Count Limit Is Not Exceeded
+      run: |
+          BranchCount=$(git branch -r | wc -l)
+          if [ $BranchCount -gt $NUM_BRANCHES ]; then echo "The current number of branches within the repository has exceeded the max allowed for more information on the standards currently in place please visit https://nhwiki.nanthealth.com/display/eng/Gitlab+Branching+and+Tagging+Policy"; exit 1; fi
+    - name: Ensure Branch Name Meets Naming Policy
+      run: |
+          if [[ ${{github.head_ref}} =~ $BRANCH_NAME_REGEX ]]; 
+          then echo "${{github.ref}} is a valid branch name "; 
+          else
+          echo "The branch you are currently using does not meet the naming standards in place for more information please visit https://nhwiki.nanthealth.com/display/eng/Gitlab+Branching+and+Tagging+Policy";
+          exit 1; fi
+    - name: Ensure Branch Does Not Contain Prohibited Files
+      run: |
+          git checkout -b ${{github.head_ref}} 
+          for FileName in $( ls ${{ github.workspace }} )
+          do
+            echo "Working on $FileName now"
+            if [[ $FileName =~ $FILE_EXCLUSION_REGEX  ]];
+            then echo "The branch you are currently using contains one or more prohibited files visit https://nhwiki.nanthealth.com/display/eng/Gitlab+Branching+and+Tagging+Policy";
+            exit 1; fi
+          done
